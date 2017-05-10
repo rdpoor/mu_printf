@@ -1,10 +1,8 @@
 /*
  * muprintf.h - a lightweight printf for embedded systems
  *
- * Derived from several sources:
- *
- *   http://stackoverflow.com/a/41800327/558639
- *   http://www.geeksforgeeks.org/implement-itoa/
+ *  Created on: May 2, 2017
+ *  Author: rdpoor@gmail.com
  */
 
 #ifndef SOURCE_MUPRINTF_H_
