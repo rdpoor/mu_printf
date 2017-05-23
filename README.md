@@ -22,7 +22,8 @@ mu_printf() supports the following familiar formats:
 
 mu_printf() handles rounding of floating point values, so that
 
-    "%f", 9.999999 => "10.000000"
+    "%f", 9.999999 => "9.999999"
+    "%f", 9.9999999 => "10.000000"
 
 Hexadecimal formats are treated as unsigned:
 
@@ -35,15 +36,22 @@ modifiers of conventional printf.
 
 ## Controlling output stream
 
-Rather than providing the myriad of printf variants (printf, fprintf, sprintf,
-snprintf), mu_printf() takes two addtional arguments:
+Embedded systems don't normally have "stdout", "stderr" or a file to print to.
+Instead, mu_printf() supports the concept of a user defined `printer` method
+that is responsible for outputting a single character at a time.
 
-    int muprintf(putchar_fn_t putchar_fn, void *obj, const char *fmt_s, ...);
+So rather than providing the myriad of printf variants (printf, fprintf,
+sprintf, snprintf), mu_printf() takes two addtional arguments:
 
-`putchar_fn` is a pointer to a function whose contract is to output a single
+    int muprintf(printer_fn_t printer_fn, void *obj, const char *fmt_s, ...);
+
+`printer_fn` is a pointer to a function whose contract is to output a single
 character on the desired stream.  `obj` is a user-supplied object passed to
-the putchar_fn.  This allows for great flexibility in where characters are
-printed.  Some examples:
+the printer_fn.  This allows for great flexibility in where characters are
+printed.  For example, you can create printer methods to write to a USB port,
+or to flash memory or to an error buffer.
+
+Here are but two examples:
 
 ### Print to stdout
 
@@ -103,18 +111,18 @@ printed.  Some examples:
      *   obj is a pointer-sized object of your choice
      *   ch is the character to be printed / stored / whatever
      */
-    typedef int (*putchar_fn_t)(void *obj, char ch);
+    typedef int (*printer_fn_t)(void *obj, char ch);
 
     /*
      * Output a single character.  Returns 1.
      */
-    int muputc(putchar_fn_t putchar_fn, void *obj, char c);
+    int muputc(printer_fn_t printer_fn, void *obj, char c);
 
     /*
      * Output a null-terminated string.  Returns the number of characters
      * written (excluding the null termination).
      */
-    int muputs(putchar_fn_t putchar_fn, void *obj, char *c);
+    int muputs(printer_fn_t printer_fn, void *obj, char *c);
 
     /*
      * Output a formatted string.  Returns the number of characters written.
@@ -128,13 +136,13 @@ printed.  Some examples:
      * %s print a string
      * %x print an integer in hexadecimal format
      */
-    int muprintf(putchar_fn_t putchar_fn, void *obj, const char *fmt_s, ...);
+    int muprintf(printer_fn_t printer_fn, void *obj, const char *fmt_s, ...);
 
     /*
      * muprintf_internal() is identical to muprintf(), but assumes that the
      * varargs have already been parsed.
      */
-    int muprintf_internal(putchar_fn_t putchar_fn,
+    int muprintf_internal(printer_fn_t printer_fn,
                          void *obj,
                          char const *fmt,
                          va_list arg);
