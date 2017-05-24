@@ -214,6 +214,20 @@ void mu_putf_test() {
   MU_TEST(check_test_emitter("10.0"));
 }
 
+void mu_printf_c_test() {
+  PRINTF("...mu_printf_c_test\r\n");
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%%") == 1);
+  MU_TEST(check_test_emitter("%"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%c", 'a') == 1);
+  MU_TEST(check_test_emitter("a"));
+
+  // %c argument is converted to unsigned int.  -159 == 97 == 'a'
+  MU_TEST(mu_printf(test_emitter, NULL, "%c", -159) == 1);
+  MU_TEST(check_test_emitter("a"));
+}
+
 void mu_printf_s_test() {
   PRINTF("...mu_printf_s_test\r\n");
   MU_TEST(mu_printf(test_emitter, NULL, "%15.0s", "abcdefghijk") == 15);
@@ -327,6 +341,209 @@ void mu_printf_s_test() {
 
 }
 
+void mu_printf_d_test() {
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+d", 0) == 2);
+  MU_TEST(check_test_emitter("+0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% d", 0) == 2);
+  MU_TEST(check_test_emitter(" 0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-d", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10d", 0) == 10);
+  MU_TEST(check_test_emitter("         0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10d", 0) == 10);
+  MU_TEST(check_test_emitter("0         "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10.5d", 0) == 10);
+  MU_TEST(check_test_emitter("     00000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", -1) == 2);
+  MU_TEST(check_test_emitter("-1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10d", 1) == 10);
+  MU_TEST(check_test_emitter("         1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10d", -1) == 10);
+  MU_TEST(check_test_emitter("        -1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10.5d", 1) == 10);
+  MU_TEST(check_test_emitter("     00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10.5d", -1) == 10);
+  MU_TEST(check_test_emitter("    -00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0d", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0d", -1) == 2);
+  MU_TEST(check_test_emitter("-1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010d", 1) == 10);
+  MU_TEST(check_test_emitter("0000000001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010d", -1) == 10);
+  MU_TEST(check_test_emitter("-000000001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010.5d", 1) == 10);
+  MU_TEST(check_test_emitter("     00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010.5d", -1) == 10);
+  MU_TEST(check_test_emitter("    -00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-d", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-d", -1) == 2);
+  MU_TEST(check_test_emitter("-1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10d", 1) == 10);
+  MU_TEST(check_test_emitter("1         "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10d", -1) == 10);
+  MU_TEST(check_test_emitter("-1        "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10.5d", 1) == 10);
+  MU_TEST(check_test_emitter("00001     "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10.5d", -1) == 10);
+  MU_TEST(check_test_emitter("-00001    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% d", 1) == 2);
+  MU_TEST(check_test_emitter(" 1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% d", -1) == 2);
+  MU_TEST(check_test_emitter("-1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10d", 1) == 10);
+  MU_TEST(check_test_emitter("         1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10d", -1) == 10);
+  MU_TEST(check_test_emitter("        -1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10.5d", 1) == 10);
+  MU_TEST(check_test_emitter("     00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10.5d", -1) == 10);
+  MU_TEST(check_test_emitter("    -00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+d", 1) == 2);
+  MU_TEST(check_test_emitter("+1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+d", -1) == 2);
+  MU_TEST(check_test_emitter("-1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10d", 1) == 10);
+  MU_TEST(check_test_emitter("        +1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10d", -1) == 10);
+  MU_TEST(check_test_emitter("        -1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10.5d", 1) == 10);
+  MU_TEST(check_test_emitter("    +00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10.5d", -1) == 10);
+  MU_TEST(check_test_emitter("    -00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", 123456) == 6);
+  MU_TEST(check_test_emitter("123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", -123456) == 7);
+  MU_TEST(check_test_emitter("-123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10d", 123456) == 10);
+  MU_TEST(check_test_emitter("    123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10d", -123456) == 10);
+  MU_TEST(check_test_emitter("   -123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10.5d", 123456) == 10);
+  MU_TEST(check_test_emitter("    123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%10.5d", -123456) == 10);
+  MU_TEST(check_test_emitter("   -123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0d", 123456) == 6);
+  MU_TEST(check_test_emitter("123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0d", -123456) == 7);
+  MU_TEST(check_test_emitter("-123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010d", 123456) == 10);
+  MU_TEST(check_test_emitter("0000123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010d", -123456) == 10);
+  MU_TEST(check_test_emitter("-000123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010.5d", 123456) == 10);
+  MU_TEST(check_test_emitter("    123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%010.5d", -123456) == 10);
+  MU_TEST(check_test_emitter("   -123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-d", 123456) == 6);
+  MU_TEST(check_test_emitter("123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-d", -123456) == 7);
+  MU_TEST(check_test_emitter("-123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10d", 123456) == 10);
+  MU_TEST(check_test_emitter("123456    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10d", -123456) == 10);
+  MU_TEST(check_test_emitter("-123456   "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10.5d", 123456) == 10);
+  MU_TEST(check_test_emitter("123456    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-10.5d", -123456) == 10);
+  MU_TEST(check_test_emitter("-123456   "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% d", 123456) == 7);
+  MU_TEST(check_test_emitter(" 123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% d", -123456) == 7);
+  MU_TEST(check_test_emitter("-123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10d", 123456) == 10);
+  MU_TEST(check_test_emitter("    123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10d", -123456) == 10);
+  MU_TEST(check_test_emitter("   -123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10.5d", 123456) == 10);
+  MU_TEST(check_test_emitter("    123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 10.5d", -123456) == 10);
+  MU_TEST(check_test_emitter("   -123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+d", 123456) == 7);
+  MU_TEST(check_test_emitter("+123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+d", -123456) == 7);
+  MU_TEST(check_test_emitter("-123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10d", 123456) == 10);
+  MU_TEST(check_test_emitter("   +123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10d", -123456) == 10);
+  MU_TEST(check_test_emitter("   -123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10.5d", 123456) == 10);
+  MU_TEST(check_test_emitter("   +123456"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+10.5d", -123456) == 10);
+  MU_TEST(check_test_emitter("   -123456"));
+}
+
 void mu_printf_test() {
   PRINTF("begin tests...\r\n");
   mu_null_emitter_test();
@@ -335,6 +552,8 @@ void mu_printf_test() {
   mu_pow10_test();
   mu_puti_test();
   mu_putf_test();
+  mu_printf_c_test();
   mu_printf_s_test();
+  mu_printf_d_test();
   PRINTF("...end of tests\r\n");
 }

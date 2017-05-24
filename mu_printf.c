@@ -202,6 +202,9 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
         break;
       }
     }
+    // fix mutual exclusions
+    if (flags.pad_right) flags.pad_zero = 0;
+    if (flags.pad_positive_plus) flags.pad_positive_space = 0;
   }
 
   // parse an ascii string as an unsigned decimal integer.  return with
@@ -227,7 +230,8 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
   }
 
   // parse the precision specifier.  lead-in char is a period, followed by
-  // decimal digits.  returns with fmt pointing at first non-digit
+  // decimal digits.  returns with fmt pointing at first non-digit and
+  // precision set to given precision or -1 if not set.
   void parse_precision() {
     precision = -1;
     ch = *fmt;
@@ -244,20 +248,27 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
     return len;
   }
 
+  int emit_char(char ch) {
+    emitter_fn(obj, ch);
+    return 1;
+  }
+
   int emit_str(char const *arg, int limit) {
     char ch;
     int len = 0;
     while((ch = *arg++) && (limit > 0)) {
-      emitter_fn(obj, ch);
+      len += emit_char(ch);
       limit--;
-      len++;
     }
     return len;
   }
 
   int emit_pad(char const pad, int n) {
+    if (n <= 0) {
+      return 0;
+    }
     for(int i=0; i<n; i++) {
-      emitter_fn(obj, pad);
+      emit_char(pad);
     }
     return n;
   }
@@ -283,6 +294,68 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
     return arg_len + padding;
   }
 
+  int process_d_directive(int val) {
+    int len = 0;
+    unsigned int absval = (val >= 0) ? val : -val;
+
+    // how many digits will be printed?
+    int absval_len = 1;
+    if (absval > 0) {
+      absval_len = mu_puti(mu_null_emitter, (void *)0, absval, 10, false);
+    }
+
+    // if precision is given, it effectively turns off zero padding.
+    if (precision >= 0) {
+      flags.pad_zero = 0;
+    }
+
+    // how many padding zeros will be printed?
+    int zero_padding = 0;
+    if (precision > absval_len) {
+      zero_padding = precision - absval_len;
+    }
+
+    // are we leaving space for leading '-', '+' or ' '?
+    int extras_len = 0;
+    if ((val < 0) || flags.pad_positive_space || flags.pad_positive_plus) {
+      extras_len = 1;
+    }
+
+    // compute padding
+    int space_padding = field_width - absval_len - zero_padding - extras_len;
+
+    // now output...
+    if (!flags.pad_right && !flags.pad_zero) {
+      len += emit_pad(' ', space_padding);
+    }
+
+    if (val < 0) {
+      len += emit_char('-');
+    } else if (flags.pad_positive_plus) {
+      len += emit_char('+');
+    } else if (flags.pad_positive_space) {
+      len += emit_char(' ');
+    }
+
+    if (!flags.pad_right && flags.pad_zero) {
+      len += emit_pad('0', space_padding);
+    }
+
+    len += emit_pad('0', zero_padding);
+
+    if (val == 0) {
+      len += emit_char('0');
+    } else {
+      len += mu_puti(emitter_fn, obj, absval, 10, false);
+    }
+
+    if (flags.pad_right) {
+      len += emit_pad(' ', space_padding);
+    }
+
+    return len;
+  }
+
   int process_directive() {
     parse_flags();
     parse_field_width();
@@ -290,12 +363,17 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
     ch = *fmt++;
     switch(ch) {
     case '%':
+      emitter_fn(obj, '%');
+      return 1;
+
     case 'c':
-      emitter_fn(obj, ch);  // emit literal character
-      break;
+      emitter_fn(obj, va_arg(arg, unsigned int));
+      return 1;
+
     case 'd':
     case 'i':
-      break;
+      return process_d_directive(va_arg(arg, int));
+
     case 'E':
       flags.upper_case = true;
       // vv -- fall through -- vv
