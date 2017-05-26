@@ -8,26 +8,26 @@
 
 #include <mu_printf.h>
 #include <stdarg.h>
-#include <stdint.h>
 
-#ifndef bool
-typedef enum {false, true} bool;
-#endif
-
-typedef union {
-  uint8_t flags;
-  struct {
-    int upper_case:1;         // use E or X
-    int alternate_form:1;     // '#' alternate form
-    int pad_zero:1;           // '0' pad left with zeros
-    int pad_right:1;          // '-' right padding
-    int pad_positive_space:1; // ' ' add leading space on positive numeric
-    int pad_positive_plus:1;  // '+' include + or -
-  } __attribute__((__packed__));
-} flags_t;
+// happy gnu extension
+#define MAX(a,b) ({ \
+  __typeof__ (a) _a = (a); \
+  __typeof__ (b) _b = (b); \
+  _a > _b ? _a : _b; \
+})
 
 // =============================================================================
 // forward declarations
+
+char const *parse_decimal(uint8_t *val, char const *str);
+int process_directive(mu_directive_t *directive, va_list arg);
+int process_c_directive(mu_directive_t *directive, unsigned int ch);
+int process_d_directive(mu_directive_t *directive, int v);
+int process_e_directive(mu_directive_t *directive, double v);
+int process_f_directive(mu_directive_t *directive, double v);
+int process_s_directive(mu_directive_t *directive, char const *str);
+int process_u_directive(mu_directive_t *directive, unsigned int v, int base);
+
 
 // ======================================================================
 // Code
@@ -36,16 +36,45 @@ int mu_null_emitter(void *obj, const char c) {
   return 1;
 }
 
-int mu_pad(emitter_t emitter_fn, void *obj, int n, const char c) {
+int mu_emit_char(emitter_t emitter_fn, void *obj, const char c) {
+  emitter_fn(obj, c);
+  return 1;
+}
+
+/*
+ * Emit n pad chars, or none if n is zero or negative.  Returns the number of
+ * chars emitted.
+ */
+int mu_emit_pad(emitter_t emitter_fn, void *obj, const char c, int n) {
   int i;
 
   for (i=0; i<n; i++) {
-    emitter_fn(obj, c);
+    mu_emit_char(emitter_fn, obj, c);
   }
   return i;
 }
 
-int mu_log10(float x) {
+/*
+ * Emit characters from str until a null is found or limit is reached, whichever
+ * comes first.  A negative limit means no limit.
+ */
+int mu_emit_str(emitter_t emitter_fn, void *obj, const char *str, int limit) {
+  char ch;
+  int n_printed = 0;
+  while((ch = *str++) && (limit != 0)) {
+    n_printed += mu_emit_char(emitter_fn, obj, ch);
+    limit -= 1;
+  }
+  return n_printed;
+}
+
+int mu_strlen(char const *str) {
+  int len = 0;
+  while (*str++) len++;
+  return len;
+}
+
+int mu_floor_log10(float x) {
   int p = 0;
   while (x < 1.0) {
     x *= 10.0;
@@ -58,7 +87,7 @@ int mu_log10(float x) {
   return p;
 }
 
-// Return 10^p (note that exp can be negative).
+// Return 10^p (note that p can be negative).
 float mu_pow10(int p) {
   if (p < 0) {
     float r1 = 1.0 / mu_pow10(-p);
@@ -99,16 +128,11 @@ int mu_puti(
       return 0;
     }
     int n = mu_puti_aux(v / base);
-    emitter_fn(obj, int_to_digit(v));
+    mu_emit_char(emitter_fn, obj, int_to_digit(v));
     return n + 1;
   }
   // ============================== top level
-  if (v == 0) {
-    emitter_fn(obj, '0');
-    return 1;
-  } else {
-    return mu_puti_aux(v);
-  }
+  return mu_puti_aux(v);
 }
 
 int mu_putf(
@@ -118,35 +142,35 @@ int mu_putf(
     unsigned int precision) {
   // ============================== lexically scoped
   // emit the digit in the 10^pow10 position after emitting higher-order digits
-  int mu_putf_aux(int pow10, bool carry) {
+  int mu_putf_aux(int pow10, bool round_up) {
     unsigned int scaled_vi = v * mu_pow10(-pow10);
     if (scaled_vi == 0 && pow10 > 0) {
       // Endgame: emit a final 1 if rounding carried over
-      if (carry) {
-        emitter_fn(obj, '1');
+      if (round_up) {
+        mu_emit_char(emitter_fn, obj, '1');
         return 1;
       } else {
         return 0;
       }
     }
     // extract least significant digit at current power of 10
-    int digit = (scaled_vi + (carry ? 1 : 0)) % 10;
+    int digit = (scaled_vi + (round_up ? 1 : 0)) % 10;
     // emit higher order digits
-    int n = mu_putf_aux(pow10 + 1, carry && (digit == 0));
+    int n = mu_putf_aux(pow10 + 1, round_up && (digit == 0));
     if (pow10 == -1) {  // time to print the decimal point?
-      emitter_fn(obj,'.');
+      mu_emit_char(emitter_fn, obj,'.');
       n += 1;
     }
-    emitter_fn(obj, digit + '0');
+    mu_emit_char(emitter_fn, obj, digit + '0');
     return n + 1;
   }
   // ============================== top level
-  // decide if lowest order digit is subject to carry
+  // decide if lowest order digit is subject to rounding
   float scaled_v = v * mu_pow10(precision);
   int scaled_vi = scaled_v;
   float rem = scaled_v - scaled_vi;
-  bool carry = (rem) >= 0.5;
-  return mu_putf_aux(-precision, carry);
+  bool round_up = (rem) >= 0.5;
+  return mu_putf_aux(-precision, round_up);
 }
 
 int mu_printf(emitter_t emitter_fn, void *obj, const char *fmt_s, ...) {
@@ -160,87 +184,316 @@ int mu_printf(emitter_t emitter_fn, void *obj, const char *fmt_s, ...) {
   return result;
 }
 
-int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
+int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list args) {
   char ch;
-  int length = 0;
-  flags_t flags;
-  int field_width = 0;
-  int precision = 0;
+  mu_directive_t directive;
+  int n_printed = 0;
+
+  directive.emitter_fn = emitter_fn;
+  directive.emitter_arg = obj;
+
+  // toplevel
+  while ((ch = *fmt++)) {
+    if ('%' == ch) {
+      fmt = mu_parse_directive(&directive, fmt);
+      n_printed += process_directive(&directive, args);
+    } else {
+      mu_emit_char(emitter_fn, obj, ch);  // process ordinary character
+      n_printed += 1;
+    }
+  }
+  return n_printed;
+}
+
+char const *mu_parse_directive(mu_directive_t *directive, char const *fmt) {
+  char ch;
+
+  directive->flags.all = 0;
+  directive->width = 0;
+  directive->precision = MU_PRECISION_NOT_GIVEN;
+
+  // parse #0- + flags...
+  bool parsing_flags = true;
+  while(parsing_flags) {
+    ch = *fmt;
+    switch(ch) {
+    case '#':
+      directive->flags.alternate_form = 1;
+      break;
+    case '0':
+      directive->flags.pad_zero = 1;
+      break;
+    case '-':
+      directive->flags.pad_right = 1;
+      break;
+    case ' ':
+      directive->flags.pad_space = 1;
+      break;
+    case '+':
+      directive->flags.pad_plus = 1;
+      break;
+    default:
+      parsing_flags = false;
+    }
+    if (parsing_flags) {
+      fmt++;
+    }
+  }
+  // fix mutual exclusions
+  if (directive->flags.pad_right) directive->flags.pad_zero = 0;
+  if (directive->flags.pad_plus) directive->flags.pad_space = 0;
+
+  // parse field width
+  fmt = parse_decimal(&directive->width, fmt);
+
+  // parse precision
+  if (*fmt == '.') {
+    fmt++;
+    fmt = parse_decimal(&directive->precision, fmt);
+  }
+
+  // parse conversion char
+  ch = *fmt++;
+  if (ch >= 'A' && ch <= 'Z') {
+    directive->flags.upper_case = 1;
+    ch = ch - 'A' + 'a';  // convert to lower case
+  }
+  directive->conversion = ch;
+
+  return fmt;
+}
+
+// =============================================================================
+// =============================================================================
+
+/*!
+ * Parse an unsigned decimal string, breaking on first non-digit.  Return value
+ * by reference, return pointer to first non-digit.
+ */
+char const *parse_decimal(uint8_t *val, char const *str) {
+  char ch;
+  uint8_t v = 0;
+  while(true) {
+    ch = *str;
+    if (ch < '0' || ch > '9') break;
+    v = (v * 10) + (ch - '0');
+    str++;
+  }
+  *val = v;
+  return str;
+}
+
+
+
+int process_directive(mu_directive_t *directive, va_list arg) {
+  switch(directive->conversion) {
+  case '%':
+    return process_c_directive(directive, '%');
+
+  case 'c':
+    return process_c_directive(directive, va_arg(arg, unsigned int));
+
+  case 'd':
+  case 'i':
+    return process_d_directive(directive, va_arg(arg, int));
+
+  case 'E':
+  case 'e':
+    return process_e_directive(directive, va_arg(arg, double));
+
+  case 'F':
+  case 'f':
+    return process_f_directive(directive, va_arg(arg, double));
+
+  case 'o':
+    return process_u_directive(directive, va_arg(arg, unsigned int), 8);
+
+  case 's':
+    return process_s_directive(directive, va_arg(arg, char const *));
+
+  case 'p':
+    directive->flags.alternate_form = true;
+    // fall through ---vvv
+  case 'X':
+  case 'x':
+    return process_u_directive(directive, va_arg(arg, unsigned int), 16);
+
+  default:
+    return 0;
+  }
+}
+
+/*
+ * Process a character.  Flags are ignored.
+ */
+int process_c_directive(mu_directive_t *directive, unsigned int ch) {
+  return mu_emit_char(directive->emitter_fn, directive->emitter_arg, ch);
+}
+
+int process_diox_directive(mu_directive_t *directive,
+                           unsigned int v,
+                           bool is_negative,
+                           int base) {
+  unsigned int n_significant;  // # of significant digits in v
+  unsigned int n_required;     // # of digits that must be printed
+
+  // how many digits will be printed?
+  n_significant = mu_puti(mu_null_emitter, (void *)0, v, base, false);
+  if (directive->precision == MU_PRECISION_NOT_GIVEN) {
+    n_required = MAX(1, n_significant);
+  } else {
+    directive->flags.pad_zero = 0;
+    n_required = MAX(directive->precision, n_significant);
+  }
+
+  // what are we printing just before the digits?
+  char *prefix = "";
+  char n_extra = 0;
+  if (is_negative) {
+    prefix = "-";
+    n_extra = 1;
+  } else if (n_required == 0) {
+    // precision = 0 and value = 0 -- no prefix
+  } else if (directive->flags.pad_plus) {
+    prefix = "+";
+    n_extra = 1;
+  } else if (directive->flags.pad_space) {
+    prefix = " ";
+    n_extra = 1;
+  } else if ((directive->flags.alternate_form) && (v != 0)) {
+    if (base == 8) {
+      prefix = "0";
+      n_extra = 1;
+    } else if (base == 16) {
+      prefix = (directive->flags.upper_case ? "0X" : "0x");
+      n_extra = 2;
+    }
+  }
+
+  // how many pad characters will we print?
+  int padding = directive->width - n_required - n_extra;
+
+  // now output:
+  int n_emitted = 0;
+  // ...leading spaces
+  if (!directive->flags.pad_right && !directive->flags.pad_zero) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             ' ',
+                             padding);
+  }
+  // ...prefix
+  n_emitted += mu_emit_str(directive->emitter_fn,
+                           directive->emitter_arg,
+                           prefix,
+                           -1);
+  // ...zero padding
+  if (directive->flags.pad_zero) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             '0',
+                             padding);
+  }
+  // ...leading zeros
+  n_emitted += mu_emit_pad(directive->emitter_fn,
+                           directive->emitter_arg,
+                           '0',
+                           n_required - n_significant);
+  // ... the value itself
+  n_emitted += mu_puti(directive->emitter_fn,
+                       directive->emitter_arg,
+                       v,
+                       base,
+                       directive->flags.upper_case);
+
+  if (directive->flags.pad_right) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             ' ',
+                             padding);
+  }
+
+  return n_emitted;
+}
+
+/*
+ * Process a signed decimal integer.
+ */
+int process_d_directive(mu_directive_t *directive, int v) {
+  bool is_negative = v < 0;
+  directive->flags.alternate_form = 0;  // %d doesn't honor %#d
+  return process_diox_directive(directive,
+                                is_negative ? -v : v,
+                                is_negative,
+                                10);
+}
+
+/*
+ * Process a float using n.nnne+xx format
+ */
+int process_e_directive(mu_directive_t *directive, double v) {
+  return 0;
+}
+
+/*
+ * Process a float
+ */
+int process_f_directive(mu_directive_t *directive, double v) {
+  return 0;
+}
+
+/*
+ * Process an unsigned integer in one of several bases...
+ */
+int process_u_directive(mu_directive_t *directive, unsigned int v, int base) {
+  return process_diox_directive(directive, v, false, base);
+}
+
+int process_s_directive(mu_directive_t *directive, char const *str) {
+  // how many characters in str are we going to print?
+  int slimit = mu_strlen(str);
+  if ((directive->precision != MU_PRECISION_NOT_GIVEN) &&
+      (directive->precision < slimit)) {
+    slimit = directive->precision;
+  }
+  // how many pad chars are we going to print?
+  int padding = directive->width - slimit;
+
+  int n_emitted = 0;
+
+  if (directive->flags.pad_right) {
+    // output string then padding
+    n_emitted += mu_emit_str(directive->emitter_fn,
+                             directive->emitter_arg,
+                             str,
+                             slimit);
+  }
+  n_emitted += mu_emit_pad(directive->emitter_fn,
+                           directive->emitter_arg,
+                           ' ',
+                           padding);
+  if (!directive->flags.pad_right) {
+    // output padding then string
+    n_emitted += mu_emit_str(directive->emitter_fn,
+                             directive->emitter_arg,
+                             str,
+                             slimit);
+  }
+  return n_emitted;
+}
+
+int foo() {
+#if 0
+  char ch;
+  directive_t directive;
+  int n_printed = 0;
+
+  directive.emitter_fn = emitter_fn;
+  directive.emitter_arg = obj;
 
   // ==========================
   // internal functions (gcc extension)
 
-  // extract flags between '%' and the conversion type char.  Returns with
-  // flags structure filled in and fmt pointing to conversion type char.
-  void parse_flags() {
-    flags.flags = 0;  // zero out flags structure
-    bool looking_at_flag = true;
-    while(true) {
-      ch = *fmt;
-      switch(ch) {
-      case '#':
-        flags.alternate_form = 1;
-        break;
-      case '0':
-        flags.pad_zero = 1;
-        break;
-      case '-':
-        flags.pad_right = 1;
-        break;
-      case ' ':
-        flags.pad_positive_space = 1;
-        break;
-      case '+':
-        flags.pad_positive_plus = 1;
-        break;
-      default:
-        looking_at_flag = false;
-      }
-      if (looking_at_flag) {
-        fmt++;
-      } else {
-        break;
-      }
-    }
-    // fix mutual exclusions
-    if (flags.pad_right) flags.pad_zero = 0;
-    if (flags.pad_positive_plus) flags.pad_positive_space = 0;
-  }
-
-  // parse an ascii string as an unsigned decimal integer.  return with
-  // fmt pointing at first non-digit.
-  int parse_decimal() {
-    int val = 0;
-    while(true) {
-      ch = *fmt;
-      if (ch < '0' || ch > '9') {
-        break;
-      }
-      val *= 10;
-      val += ch - '0';
-      fmt++;
-    }
-    return val;
-  }
-
-  // parse the field width specifier.  return with field_width set to the
-  // field width and fmt pointing at first non-field width char
-  void parse_field_width() {
-    field_width = parse_decimal();
-  }
-
-  // parse the precision specifier.  lead-in char is a period, followed by
-  // decimal digits.  returns with fmt pointing at first non-digit and
-  // precision set to given precision or -1 if not set.
-  void parse_precision() {
-    precision = -1;
-    ch = *fmt;
-    if (ch != '.') {
-      return;
-    }
-    fmt++;
-    precision = parse_decimal();
-  }
 
   int strlen(char const *arg) {
     int len = 0;
@@ -248,36 +501,11 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
     return len;
   }
 
-  int emit_char(char ch) {
-    emitter_fn(obj, ch);
-    return 1;
-  }
-
-  int emit_str(char const *arg, int limit) {
-    char ch;
-    int len = 0;
-    while((ch = *arg++) && (limit > 0)) {
-      len += emit_char(ch);
-      limit--;
-    }
-    return len;
-  }
-
-  int emit_pad(char const pad, int n) {
-    if (n <= 0) {
-      return 0;
-    }
-    for(int i=0; i<n; i++) {
-      emit_char(pad);
-    }
-    return n;
-  }
-
   int process_s_directive(char *arg) {
     int padding = 0;
     int arg_len = strlen(arg);
     if ((precision >= 0) && (precision < arg_len)) {
-      // if precision given, limit string length
+      // if precision given, limit string n_printed
       arg_len = precision;
     }
     if (field_width > arg_len) {
@@ -317,7 +545,7 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
 
     // are we leaving space for leading '-', '+' or ' '?
     int extras_len = 0;
-    if ((val < 0) || flags.pad_positive_space || flags.pad_positive_plus) {
+    if ((val < 0) || flags.pad_space || flags.pad_plus) {
       extras_len = 1;
     }
 
@@ -331,9 +559,9 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
 
     if (val < 0) {
       len += emit_char('-');
-    } else if (flags.pad_positive_plus) {
+    } else if (flags.pad_plus) {
       len += emit_char('+');
-    } else if (flags.pad_positive_space) {
+    } else if (flags.pad_space) {
       len += emit_char(' ');
     }
 
@@ -355,60 +583,7 @@ int mu_vprintf(emitter_t emitter_fn, void *obj, char const *fmt, va_list arg) {
 
     return len;
   }
-
-  int process_directive() {
-    parse_flags();
-    parse_field_width();
-    parse_precision();
-    ch = *fmt++;
-    switch(ch) {
-    case '%':
-      emitter_fn(obj, '%');
-      return 1;
-
-    case 'c':
-      emitter_fn(obj, va_arg(arg, unsigned int));
-      return 1;
-
-    case 'd':
-    case 'i':
-      return process_d_directive(va_arg(arg, int));
-
-    case 'E':
-      flags.upper_case = true;
-      // vv -- fall through -- vv
-    case 'e':
-      break;
-    case 'f':
-      break;
-    case 'o':
-      break;
-    case 'p':
-      break;
-    case 's':
-      return process_s_directive(va_arg(arg, char *));
-
-    case 'X':
-      flags.upper_case = true;
-      // vv -- fall through -- vv
-    case 'x':
-      break;
-    default:
-      break;
-    }
-    return 0;
-  }
-
-  // ==========================
-  // toplevel
-  while ((ch = *fmt++)) {
-    if ('%' == ch) {
-      length += process_directive();  // process % directive
-    } else {
-      emitter_fn(obj, ch);  // process ordinary character
-      length += 1;
-    }
-  }
-  return length;
+#endif
+  return 0;
 }
 

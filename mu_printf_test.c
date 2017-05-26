@@ -59,25 +59,25 @@ void mu_null_emitter_test() {
 
 void mu_pad_test() {
   PRINTF("...mu_pad_test\r\n");
-  MU_TEST(mu_pad(test_emitter, NULL, -1, ' ') == 0);
+  MU_TEST(mu_emit_pad(test_emitter, NULL, ' ', -1) == 0);
   MU_TEST(check_test_emitter(""));
-  MU_TEST(mu_pad(test_emitter, NULL, 0, ' ') == 0);
+  MU_TEST(mu_emit_pad(test_emitter, NULL, ' ', 0) == 0);
   MU_TEST(check_test_emitter(""));
-  MU_TEST(mu_pad(test_emitter, NULL, 1, ' ') == 1);
+  MU_TEST(mu_emit_pad(test_emitter, NULL, ' ', 1) == 1);
   MU_TEST(check_test_emitter(" "));
-  MU_TEST(mu_pad(test_emitter, NULL, 2, '|') == 2);
+  MU_TEST(mu_emit_pad(test_emitter, NULL, '|', 2) == 2);
   MU_TEST(check_test_emitter("||"));
 }
 
-void mu_log10_test() {
-  PRINTF("...mu_log10_test\r\n");
-  MU_TEST(mu_log10(0.10) == -1);
-  MU_TEST(mu_log10(0.99) == -1);
-  MU_TEST(mu_log10(1.00) == 0);
-  MU_TEST(mu_log10(9.95) == 0);
-  MU_TEST(mu_log10(10.0) == 1);
-  MU_TEST(mu_log10(99.5) == 1);
-  MU_TEST(mu_log10(100.) == 2);
+void mu_floor_log10_test() {
+  PRINTF("...mu_floor_log10_test\r\n");
+  MU_TEST(mu_floor_log10(0.10) == -1);
+  MU_TEST(mu_floor_log10(0.99) == -1);
+  MU_TEST(mu_floor_log10(1.00) == 0);
+  MU_TEST(mu_floor_log10(9.95) == 0);
+  MU_TEST(mu_floor_log10(10.0) == 1);
+  MU_TEST(mu_floor_log10(99.5) == 1);
+  MU_TEST(mu_floor_log10(100.) == 2);
 }
 
 void mu_pow10_test() {
@@ -115,8 +115,8 @@ void mu_puti_test() {
    */
   PRINTF("...mu_puti_test\r\n");
 
-  MU_TEST(mu_puti(test_emitter, NULL, 0, 10, false) == 1);
-  MU_TEST(check_test_emitter("0"));
+  MU_TEST(mu_puti(test_emitter, NULL, 0, 10, false) == 0);
+  MU_TEST(check_test_emitter(""));
 
   MU_TEST(mu_puti(test_emitter, NULL, 1, 10, false) == 1);
   MU_TEST(check_test_emitter("1"));
@@ -214,6 +214,86 @@ void mu_putf_test() {
   MU_TEST(check_test_emitter("10.0"));
 }
 
+void mu_parse_directive_test() {
+  mu_directive_t directive;
+
+  MU_TEST(*mu_parse_directive(&directive, "a?") == '?');
+  MU_TEST(directive.flags.all == 0);
+  MU_TEST(directive.width == 0);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "1a?") == '?');
+  MU_TEST(directive.flags.all == 0);
+  MU_TEST(directive.width == 1);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "#a?") == '?');
+  MU_TEST(directive.flags.alternate_form != 0);
+  MU_TEST(directive.width == 0);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "+a?") == '?');
+  MU_TEST(directive.flags.pad_plus != 0);
+  MU_TEST(directive.width == 0);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "-a?") == '?');
+  MU_TEST(directive.flags.pad_right != 0);
+  MU_TEST(directive.width == 0);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, " a?") == '?');
+  MU_TEST(directive.flags.pad_space != 0);
+  MU_TEST(directive.width == 0);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "0a?") == '?');
+  MU_TEST(directive.flags.pad_zero != 0);
+  MU_TEST(directive.width == 0);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "01a?") == '?');
+  MU_TEST(directive.flags.pad_zero != 0);
+  MU_TEST(directive.width == 1);
+  MU_TEST(directive.precision == MU_PRECISION_NOT_GIVEN);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "01.a?") == '?');
+  MU_TEST(directive.flags.pad_zero != 0);
+  MU_TEST(directive.width == 1);
+  MU_TEST(directive.precision == 0);
+  MU_TEST(directive.conversion == 'a');
+
+  MU_TEST(*mu_parse_directive(&directive, "01.2a?") == '?');
+  MU_TEST(directive.flags.pad_zero != 0);
+  MU_TEST(directive.width == 1);
+  MU_TEST(directive.precision == 2);
+  MU_TEST(directive.conversion == 'a');
+
+  // mutual exclusions
+  MU_TEST(*mu_parse_directive(&directive, "0-1.2a?") == '?');
+  MU_TEST(directive.flags.pad_zero == 0);
+  MU_TEST(directive.flags.pad_right != 0);
+
+  MU_TEST(*mu_parse_directive(&directive, "+ 1.2a?") == '?');
+  MU_TEST(directive.flags.pad_plus != 0);
+  MU_TEST(directive.flags.pad_space == 0);
+
+  MU_TEST(*mu_parse_directive(&directive, "01.2A?") == '?');
+  MU_TEST(directive.flags.upper_case != 0);
+  MU_TEST(directive.flags.pad_zero != 0);
+  MU_TEST(directive.width == 1);
+  MU_TEST(directive.precision == 2);
+  MU_TEST(directive.conversion == 'a');
+}
+
 void mu_printf_c_test() {
   PRINTF("...mu_printf_c_test\r\n");
 
@@ -230,6 +310,10 @@ void mu_printf_c_test() {
 
 void mu_printf_s_test() {
   PRINTF("...mu_printf_s_test\r\n");
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%s", "abcdefghijk") == 11);
+  MU_TEST(check_test_emitter("abcdefghijk"));
+
   MU_TEST(mu_printf(test_emitter, NULL, "%15.0s", "abcdefghijk") == 15);
   MU_TEST(check_test_emitter("               "));
 
@@ -278,12 +362,14 @@ void mu_printf_s_test() {
   MU_TEST(mu_printf(test_emitter, NULL, "%-5s", "abcdefghijk") == 11);
   MU_TEST(check_test_emitter("abcdefghijk"));
 
-  MU_TEST(mu_printf(test_emitter, NULL, "%s", "abcdefghijk") == 11);
-  MU_TEST(check_test_emitter("abcdefghijk"));
-
   MU_TEST(mu_printf(test_emitter, NULL, "%-s", "abcdefghijk") == 11);
   MU_TEST(check_test_emitter("abcdefghijk"));
 
+  MU_TEST(mu_printf(test_emitter, NULL, "%010s", "abcd") == 10);
+  MU_TEST(check_test_emitter("      abcd"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-010s", "abcd") == 10);
+  MU_TEST(check_test_emitter("abcd      "));
 
   MU_TEST(mu_printf(test_emitter, NULL, "%15.0s", "abcd") == 15);
   MU_TEST(check_test_emitter("               "));
@@ -342,14 +428,64 @@ void mu_printf_s_test() {
 }
 
 void mu_printf_d_test() {
+  PRINTF("...mu_printf_d_test\r\n");
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%d", -1) == 2);
+  MU_TEST(check_test_emitter("-1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%.d", 0) == 0);
+  MU_TEST(check_test_emitter(""));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%.d", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%.d", -1) == 2);
+  MU_TEST(check_test_emitter("-1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%.3d", 0) == 3);
+  MU_TEST(check_test_emitter("000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%.3d", 1) == 3);
+  MU_TEST(check_test_emitter("001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%.3d", -1) == 4);
+  MU_TEST(check_test_emitter("-001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+d", 1) == 2);
+  MU_TEST(check_test_emitter("+1"));
+  // PRINTF("got '%s'\r\n", test_buf);
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% d", 1) == 2);
+  MU_TEST(check_test_emitter(" 1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5d", 1) == 5);
+  MU_TEST(check_test_emitter("   +1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5d", 1) == 5);
+  MU_TEST(check_test_emitter("    1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05d", 1) == 5);
+  MU_TEST(check_test_emitter("00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5d", 1) == 5);
+  MU_TEST(check_test_emitter("1    "));
+
   MU_TEST(mu_printf(test_emitter, NULL, "%d", 0) == 1);
   MU_TEST(check_test_emitter("0"));
 
   MU_TEST(mu_printf(test_emitter, NULL, "%+d", 0) == 2);
   MU_TEST(check_test_emitter("+0"));
+  // PRINTF("got '%s'\r\n", test_buf);
 
   MU_TEST(mu_printf(test_emitter, NULL, "% d", 0) == 2);
   MU_TEST(check_test_emitter(" 0"));
+  // PRINTF("got '%s'\r\n", test_buf);
 
   MU_TEST(mu_printf(test_emitter, NULL, "%-d", 0) == 1);
   MU_TEST(check_test_emitter("0"));
@@ -544,16 +680,147 @@ void mu_printf_d_test() {
   MU_TEST(check_test_emitter("   -123456"));
 }
 
+void mu_printf_xoX_test() {
+  PRINTF("...mu_printf_xoX_test\r\n");
+  MU_TEST(mu_printf(test_emitter, NULL, "%x", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#x", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+  // PRINTF("got '%s'\r\n", test_buf);
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0x", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-x", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5x", 0) == 5);
+  MU_TEST(check_test_emitter("    0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5x", 0) == 5);
+  MU_TEST(check_test_emitter("    0"));
+  // PRINTF("got '%s'\r\n", test_buf);
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05x", 0) == 5);
+  MU_TEST(check_test_emitter("00000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5x", 0) == 5);
+  MU_TEST(check_test_emitter("0    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.x", 0) == 5);
+  MU_TEST(check_test_emitter("     "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.x", 0) == 5);
+  MU_TEST(check_test_emitter("     "));
+  // PRINTF("got '%s'\r\n", test_buf);
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.x", 0) == 5);
+  MU_TEST(check_test_emitter("     "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.x", 0) == 5);
+  MU_TEST(check_test_emitter("     "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%x", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#x", 1) == 3);
+  MU_TEST(check_test_emitter("0x1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0x", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-x", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5x", 1) == 5);
+  MU_TEST(check_test_emitter("    1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5x", 1) == 5);
+  MU_TEST(check_test_emitter("  0x1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05x", 1) == 5);
+  MU_TEST(check_test_emitter("00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5x", 1) == 5);
+  MU_TEST(check_test_emitter("1    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.x", 1) == 5);
+  MU_TEST(check_test_emitter("    1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.x", 1) == 5);
+  MU_TEST(check_test_emitter("  0x1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.x", 1) == 5);
+  MU_TEST(check_test_emitter("    1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.x", 1) == 5);
+  MU_TEST(check_test_emitter("1    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%x", 6844) == 4);
+  MU_TEST(check_test_emitter("1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#x", 6844) == 6);
+  MU_TEST(check_test_emitter("0x1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0x", 6844) == 4);
+  MU_TEST(check_test_emitter("1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-x", 6844) == 4);
+  MU_TEST(check_test_emitter("1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5x", 6844) == 5);
+  MU_TEST(check_test_emitter(" 1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5x", 6844) == 6);
+  MU_TEST(check_test_emitter("0x1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05x", 6844) == 5);
+  MU_TEST(check_test_emitter("01abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5x", 6844) == 5);
+  MU_TEST(check_test_emitter("1abc "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.x", 6844) == 5);
+  MU_TEST(check_test_emitter(" 1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.x", 6844) == 6);
+  MU_TEST(check_test_emitter("0x1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.x", 6844) == 5);
+  MU_TEST(check_test_emitter(" 1abc"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.x", 6844) == 5);
+  MU_TEST(check_test_emitter("1abc "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%X", 6844) == 4);
+  MU_TEST(check_test_emitter("1ABC"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#X", 6844) == 6);
+  MU_TEST(check_test_emitter("0X1ABC"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%o", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%o", 6844) == 5);
+  MU_TEST(check_test_emitter("15274"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#o", 6844) == 6);
+  MU_TEST(check_test_emitter("015274"));
+}
+
 void mu_printf_test() {
   PRINTF("begin tests...\r\n");
   mu_null_emitter_test();
   mu_pad_test();
-  mu_log10_test();
+  mu_floor_log10_test();
   mu_pow10_test();
   mu_puti_test();
   mu_putf_test();
+  mu_parse_directive_test();
   mu_printf_c_test();
   mu_printf_s_test();
   mu_printf_d_test();
+  mu_printf_xoX_test();
   PRINTF("...end of tests\r\n");
 }
