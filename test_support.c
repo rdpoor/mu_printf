@@ -1,10 +1,3 @@
-/*
- * mu_unit_test_definitions.c
- *
- *  Created on: May 23, 2017
- *      Author: r
- */
-
 // gcc -Wall -o test_support test_support.c && ./test_support && rm ./test_support
 #include <stdio.h>
 
@@ -37,56 +30,118 @@
   }
 
 int main() {
-  MAKE_MU_PRINTF_TEST("%x", 0);
-  MAKE_MU_PRINTF_TEST("%#x", 0);
-  MAKE_MU_PRINTF_TEST("%0x", 0);
-  MAKE_MU_PRINTF_TEST("%-x", 0);
 
-  MAKE_MU_PRINTF_TEST("%5x", 0);
-  MAKE_MU_PRINTF_TEST("%#5x", 0);
-  MAKE_MU_PRINTF_TEST("%05x", 0);
-  MAKE_MU_PRINTF_TEST("%-5x", 0);
+  MAKE_MU_PRINTF_TEST("%f", 0.0);
+  MAKE_MU_PRINTF_TEST("% f", 0.0);
+  MAKE_MU_PRINTF_TEST("%#f", 0.0);
+  MAKE_MU_PRINTF_TEST("%+f", 0.0);
+  MAKE_MU_PRINTF_TEST("%-f", 0.0);
+  MAKE_MU_PRINTF_TEST("%0f", 0.0);
 
-  MAKE_MU_PRINTF_TEST("%5.x", 0);
-  MAKE_MU_PRINTF_TEST("%#5.x", 0);
-  MAKE_MU_PRINTF_TEST("%05.x", 0);
-  MAKE_MU_PRINTF_TEST("%-5.x", 0);
+  MAKE_MU_PRINTF_TEST("%5f", 0.0);
+  MAKE_MU_PRINTF_TEST("% 5f", 0.0);
+  MAKE_MU_PRINTF_TEST("%#5f", 0.0);
+  MAKE_MU_PRINTF_TEST("%+5f", 0.0);
+  MAKE_MU_PRINTF_TEST("%-5f", 0.0);
+  MAKE_MU_PRINTF_TEST("%05f", 0.0);
 
-  MAKE_MU_PRINTF_TEST("%x", 1);
-  MAKE_MU_PRINTF_TEST("%#x", 1);
-  MAKE_MU_PRINTF_TEST("%0x", 1);
-  MAKE_MU_PRINTF_TEST("%-x", 1);
+  MAKE_MU_PRINTF_TEST("%5.f", 0.0);
+  MAKE_MU_PRINTF_TEST("% 5.f", 0.0);
+  MAKE_MU_PRINTF_TEST("%#5.f", 0.0);
+  MAKE_MU_PRINTF_TEST("%+5.f", 0.0);
+  MAKE_MU_PRINTF_TEST("%-5.f", 0.0);
+  MAKE_MU_PRINTF_TEST("%05.f", 0.0);
 
-  MAKE_MU_PRINTF_TEST("%5x", 1);
-  MAKE_MU_PRINTF_TEST("%#5x", 1);
-  MAKE_MU_PRINTF_TEST("%05x", 1);
-  MAKE_MU_PRINTF_TEST("%-5x", 1);
+  MAKE_MU_PRINTF_TEST("%5.1f", 0.0);
+  MAKE_MU_PRINTF_TEST("% 5.1f", 0.0);
+  MAKE_MU_PRINTF_TEST("%#5.1f", 0.0);
+  MAKE_MU_PRINTF_TEST("%+5.1f", 0.0);
+  MAKE_MU_PRINTF_TEST("%-5.1f", 0.0);
+  MAKE_MU_PRINTF_TEST("%05.1f", 0.0);
 
-  MAKE_MU_PRINTF_TEST("%5.x", 1);
-  MAKE_MU_PRINTF_TEST("%#5.x", 1);
-  MAKE_MU_PRINTF_TEST("%05.x", 1);
-  MAKE_MU_PRINTF_TEST("%-5.x", 1);
+  MAKE_MU_PRINTF_TEST("%f", 1.0);
+  MAKE_MU_PRINTF_TEST("% f", 1.0);
+  MAKE_MU_PRINTF_TEST("%#f", 1.0);
+  MAKE_MU_PRINTF_TEST("%+f", 1.0);
+  MAKE_MU_PRINTF_TEST("%-f", 1.0);
+  MAKE_MU_PRINTF_TEST("%0f", 1.0);
 
-  MAKE_MU_PRINTF_TEST("%x", 6844);
-  MAKE_MU_PRINTF_TEST("%#x", 6844);
-  MAKE_MU_PRINTF_TEST("%0x", 6844);
-  MAKE_MU_PRINTF_TEST("%-x", 6844);
+  MAKE_MU_PRINTF_TEST("%5f", 1.0);
+  MAKE_MU_PRINTF_TEST("% 5f", 1.0);
+  MAKE_MU_PRINTF_TEST("%#5f", 1.0);
+  MAKE_MU_PRINTF_TEST("%+5f", 1.0);
+  MAKE_MU_PRINTF_TEST("%-5f", 1.0);
+  MAKE_MU_PRINTF_TEST("%05f", 1.0);
 
-  MAKE_MU_PRINTF_TEST("%5x", 6844);
-  MAKE_MU_PRINTF_TEST("%#5x", 6844);
-  MAKE_MU_PRINTF_TEST("%05x", 6844);
-  MAKE_MU_PRINTF_TEST("%-5x", 6844);
+  MAKE_MU_PRINTF_TEST("%5.f", 1.0);
+  MAKE_MU_PRINTF_TEST("% 5.f", 1.0);
+  MAKE_MU_PRINTF_TEST("%#5.f", 1.0);
+  MAKE_MU_PRINTF_TEST("%+5.f", 1.0);
+  MAKE_MU_PRINTF_TEST("%-5.f", 1.0);
+  MAKE_MU_PRINTF_TEST("%05.f", 1.0);
 
-  MAKE_MU_PRINTF_TEST("%5.x", 6844);
-  MAKE_MU_PRINTF_TEST("%#5.x", 6844);
-  MAKE_MU_PRINTF_TEST("%05.x", 6844);
-  MAKE_MU_PRINTF_TEST("%-5.x", 6844);
+  MAKE_MU_PRINTF_TEST("%5.1f", 1.0);
+  MAKE_MU_PRINTF_TEST("% 5.1f", 1.0);
+  MAKE_MU_PRINTF_TEST("%#5.1f", 1.0);
+  MAKE_MU_PRINTF_TEST("%+5.1f", 1.0);
+  MAKE_MU_PRINTF_TEST("%-5.1f", 1.0);
+  MAKE_MU_PRINTF_TEST("%05.1f", 1.0);
 
-  MAKE_MU_PRINTF_TEST("%X", 6844);
-  MAKE_MU_PRINTF_TEST("%#X", 6844);
+  MAKE_MU_PRINTF_TEST("%f", -1.0);
+  MAKE_MU_PRINTF_TEST("% f", -1.0);
+  MAKE_MU_PRINTF_TEST("%#f", -1.0);
+  MAKE_MU_PRINTF_TEST("%+f", -1.0);
+  MAKE_MU_PRINTF_TEST("%-f", -1.0);
+  MAKE_MU_PRINTF_TEST("%0f", -1.0);
 
-  MAKE_MU_PRINTF_TEST("%o", 6844);
-  MAKE_MU_PRINTF_TEST("%#o", 6844);
-  
-  return 0;
+  MAKE_MU_PRINTF_TEST("%5f", -1.0);
+  MAKE_MU_PRINTF_TEST("% 5f", -1.0);
+  MAKE_MU_PRINTF_TEST("%#5f", -1.0);
+  MAKE_MU_PRINTF_TEST("%+5f", -1.0);
+  MAKE_MU_PRINTF_TEST("%-5f", -1.0);
+  MAKE_MU_PRINTF_TEST("%05f", -1.0);
+
+  MAKE_MU_PRINTF_TEST("%5.f", -1.0);
+  MAKE_MU_PRINTF_TEST("% 5.f", -1.0);
+  MAKE_MU_PRINTF_TEST("%#5.f", -1.0);
+  MAKE_MU_PRINTF_TEST("%+5.f", -1.0);
+  MAKE_MU_PRINTF_TEST("%-5.f", -1.0);
+  MAKE_MU_PRINTF_TEST("%05.f", -1.0);
+
+  MAKE_MU_PRINTF_TEST("%5.1f", -1.0);
+  MAKE_MU_PRINTF_TEST("% 5.1f", -1.0);
+  MAKE_MU_PRINTF_TEST("%#5.1f", -1.0);
+  MAKE_MU_PRINTF_TEST("%+5.1f", -1.0);
+  MAKE_MU_PRINTF_TEST("%-5.1f", -1.0);
+  MAKE_MU_PRINTF_TEST("%05.1f", -1.0);
+
+  MAKE_MU_PRINTF_TEST("%f", 9.99);
+  MAKE_MU_PRINTF_TEST("% f", 9.99);
+  MAKE_MU_PRINTF_TEST("%#f", 9.99);
+  MAKE_MU_PRINTF_TEST("%+f", 9.99);
+  MAKE_MU_PRINTF_TEST("%-f", 9.99);
+  MAKE_MU_PRINTF_TEST("%0f", 9.99);
+
+  MAKE_MU_PRINTF_TEST("%5f", 9.99);
+  MAKE_MU_PRINTF_TEST("% 5f", 9.99);
+  MAKE_MU_PRINTF_TEST("%#5f", 9.99);
+  MAKE_MU_PRINTF_TEST("%+5f", 9.99);
+  MAKE_MU_PRINTF_TEST("%-5f", 9.99);
+  MAKE_MU_PRINTF_TEST("%05f", 9.99);
+
+  MAKE_MU_PRINTF_TEST("%5.f", 9.99);
+  MAKE_MU_PRINTF_TEST("% 5.f", 9.99);
+  MAKE_MU_PRINTF_TEST("%#5.f", 9.99);
+  MAKE_MU_PRINTF_TEST("%+5.f", 9.99);
+  MAKE_MU_PRINTF_TEST("%-5.f", 9.99);
+  MAKE_MU_PRINTF_TEST("%05.f", 9.99);
+
+  MAKE_MU_PRINTF_TEST("%5.1f", 9.99);
+  MAKE_MU_PRINTF_TEST("% 5.1f", 9.99);
+  MAKE_MU_PRINTF_TEST("%#5.1f", 9.99);
+  MAKE_MU_PRINTF_TEST("%+5.1f", 9.99);
+  MAKE_MU_PRINTF_TEST("%-5.1f", 9.99);
+  MAKE_MU_PRINTF_TEST("%05.1f", 9.99);
+
+return 0;
 }

@@ -27,6 +27,7 @@ int process_e_directive(mu_directive_t *directive, double v);
 int process_f_directive(mu_directive_t *directive, double v);
 int process_s_directive(mu_directive_t *directive, char const *str);
 int process_u_directive(mu_directive_t *directive, unsigned int v, int base);
+int emit_float_aux(emitter_t emitter, void *obj, float v, int p10, bool round_up);
 
 
 // ======================================================================
@@ -105,8 +106,7 @@ float mu_pow10(int p) {
   return res;
 }
 
-
-int mu_puti(
+int mu_emit_integer(
     emitter_t emitter_fn,
     void *obj,
     unsigned int v,
@@ -135,42 +135,39 @@ int mu_puti(
   return mu_puti_aux(v);
 }
 
-int mu_putf(
-    emitter_t emitter_fn,
-    void *obj,
-    float v,
-    unsigned int precision) {
-  // ============================== lexically scoped
-  // emit the digit in the 10^pow10 position after emitting higher-order digits
-  int mu_putf_aux(int pow10, bool round_up) {
-    unsigned int scaled_vi = v * mu_pow10(-pow10);
-    if (scaled_vi == 0 && pow10 > 0) {
-      // Endgame: emit a final 1 if rounding carried over
-      if (round_up) {
-        mu_emit_char(emitter_fn, obj, '1');
-        return 1;
-      } else {
-        return 0;
-      }
-    }
-    // extract least significant digit at current power of 10
-    int digit = (scaled_vi + (round_up ? 1 : 0)) % 10;
-    // emit higher order digits
-    int n = mu_putf_aux(pow10 + 1, round_up && (digit == 0));
-    if (pow10 == -1) {  // time to print the decimal point?
-      mu_emit_char(emitter_fn, obj,'.');
-      n += 1;
-    }
-    mu_emit_char(emitter_fn, obj, digit + '0');
-    return n + 1;
-  }
-  // ============================== top level
-  // decide if lowest order digit is subject to rounding
+int mu_emit_float(emitter_t emitter,
+                  void *obj,
+                  float v,
+                  unsigned int precision) {
+  // preamble: decide if lowest order digit is subject to rounding
   float scaled_v = v * mu_pow10(precision);
-  int scaled_vi = scaled_v;
-  float rem = scaled_v - scaled_vi;
-  bool round_up = (rem) >= 0.5;
-  return mu_putf_aux(-precision, round_up);
+  bool round_up = (scaled_v - (int)scaled_v) >= 0.5;
+  return emit_float_aux(emitter, obj, v, -precision, round_up);
+}
+
+// emit the digit in the 10^pow10 position after emitting higher-order digits
+int emit_float_aux(emitter_t emitter, void *obj, float v, int pow10, bool round_up) {
+  unsigned int scaled_vi = v * mu_pow10(-pow10);
+  if (scaled_vi == 0 && pow10 > 0) {
+    // Endgame: emit a final 1 if rounding carried over
+    if (round_up) {
+      mu_emit_char(emitter, obj, '1');
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  // extract least significant digit at current power of 10
+  int digit = (scaled_vi + (round_up ? 1 : 0)) % 10;
+  // emit higher order digits
+  int n = emit_float_aux(emitter, obj, v, pow10 + 1, round_up && (digit == 0));
+  // is it time to print the decimal point?
+  if (pow10 == -1) {
+    mu_emit_char(emitter, obj,'.');
+    n += 1;
+  }
+  mu_emit_char(emitter, obj, digit + '0');
+  return n + 1;
 }
 
 int mu_printf(emitter_t emitter_fn, void *obj, const char *fmt_s, ...) {
@@ -290,6 +287,9 @@ int process_directive(mu_directive_t *directive, va_list arg) {
   case '%':
     return process_c_directive(directive, '%');
 
+  case 'b':
+    return process_u_directive(directive, va_arg(arg, unsigned int), 2);
+
   case 'c':
     return process_c_directive(directive, va_arg(arg, unsigned int));
 
@@ -338,7 +338,7 @@ int process_diox_directive(mu_directive_t *directive,
   unsigned int n_required;     // # of digits that must be printed
 
   // how many digits will be printed?
-  n_significant = mu_puti(mu_null_emitter, (void *)0, v, base, false);
+  n_significant = mu_emit_integer(mu_null_emitter, (void *)0, v, base, false);
   if (directive->precision == MU_PRECISION_NOT_GIVEN) {
     n_required = MAX(1, n_significant);
   } else {
@@ -361,7 +361,10 @@ int process_diox_directive(mu_directive_t *directive,
     prefix = " ";
     n_extra = 1;
   } else if ((directive->flags.alternate_form) && (v != 0)) {
-    if (base == 8) {
+    if (base == 2) {
+      prefix = (directive->flags.upper_case ? "0B" : "0b");
+      n_extra = 2;
+    } else if (base == 8) {
       prefix = "0";
       n_extra = 1;
     } else if (base == 16) {
@@ -400,7 +403,7 @@ int process_diox_directive(mu_directive_t *directive,
                            '0',
                            n_required - n_significant);
   // ... the value itself
-  n_emitted += mu_puti(directive->emitter_fn,
+  n_emitted += mu_emit_integer(directive->emitter_fn,
                        directive->emitter_arg,
                        v,
                        base,
@@ -439,7 +442,80 @@ int process_e_directive(mu_directive_t *directive, double v) {
  * Process a float
  */
 int process_f_directive(mu_directive_t *directive, double v) {
-  return 0;
+  bool is_negative = v < 0;
+  if (is_negative) v = -v;
+  unsigned int n_characters;  // # of chars in atof(v)
+
+  if (directive->precision == MU_PRECISION_NOT_GIVEN) {
+    directive->precision = 6;
+  }
+  // how many digits will be printed?
+  n_characters = mu_emit_float(mu_null_emitter, (void *)0, v, directive->precision);
+
+  // what are we printing just before the digits?
+  char *prefix = "";
+  char n_extra = 0;
+  if (is_negative) {
+    prefix = "-";
+    n_extra = 1;
+  } else if (directive->flags.pad_plus) {
+    prefix = "+";
+    n_extra = 1;
+  } else if (directive->flags.pad_space) {
+    prefix = " ";
+    n_extra = 1;
+  }
+
+  // are we going to print an explicit trailing '.'?
+  if (directive->precision == 0 && directive->flags.alternate_form) {
+    n_extra += 1;
+  }
+
+  // how many pad characters will we print?
+  int padding = directive->width - n_characters - n_extra;
+
+  // now output:
+  int n_emitted = 0;
+  // ...leading spaces
+  if (!directive->flags.pad_right && !directive->flags.pad_zero) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             ' ',
+                             padding);
+  }
+  // ...prefix
+  n_emitted += mu_emit_str(directive->emitter_fn,
+                           directive->emitter_arg,
+                           prefix,
+                           -1);
+  // ...zero padding
+  if (directive->flags.pad_zero) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             '0',
+                             padding);
+  }
+  // ... the value itself
+  n_emitted += mu_emit_float(directive->emitter_fn,
+                       directive->emitter_arg,
+                       v,
+                       directive->precision);
+  // ... explicit trailing '.'
+  if (directive->precision == 0 && directive->flags.alternate_form) {
+    n_emitted += mu_emit_char(directive->emitter_fn,
+                              directive->emitter_arg,
+                              '.');
+  }
+  // ... trailing padding
+  if (directive->flags.pad_right) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             ' ',
+                             padding);
+  }
+
+  return n_emitted;
+
 }
 
 /*
@@ -480,110 +556,5 @@ int process_s_directive(mu_directive_t *directive, char const *str) {
                              slimit);
   }
   return n_emitted;
-}
-
-int foo() {
-#if 0
-  char ch;
-  directive_t directive;
-  int n_printed = 0;
-
-  directive.emitter_fn = emitter_fn;
-  directive.emitter_arg = obj;
-
-  // ==========================
-  // internal functions (gcc extension)
-
-
-  int strlen(char const *arg) {
-    int len = 0;
-    while (*arg++) len++;
-    return len;
-  }
-
-  int process_s_directive(char *arg) {
-    int padding = 0;
-    int arg_len = strlen(arg);
-    if ((precision >= 0) && (precision < arg_len)) {
-      // if precision given, limit string n_printed
-      arg_len = precision;
-    }
-    if (field_width > arg_len) {
-      // if field_width given, pad resulting output
-      padding = field_width - arg_len;
-    }
-    if (flags.pad_right) {
-      emit_str(arg, arg_len);
-      emit_pad(' ', padding);
-    } else {
-      emit_pad(' ', padding);
-      emit_str(arg, arg_len);
-    }
-    return arg_len + padding;
-  }
-
-  int process_d_directive(int val) {
-    int len = 0;
-    unsigned int absval = (val >= 0) ? val : -val;
-
-    // how many digits will be printed?
-    int absval_len = 1;
-    if (absval > 0) {
-      absval_len = mu_puti(mu_null_emitter, (void *)0, absval, 10, false);
-    }
-
-    // if precision is given, it effectively turns off zero padding.
-    if (precision >= 0) {
-      flags.pad_zero = 0;
-    }
-
-    // how many padding zeros will be printed?
-    int zero_padding = 0;
-    if (precision > absval_len) {
-      zero_padding = precision - absval_len;
-    }
-
-    // are we leaving space for leading '-', '+' or ' '?
-    int extras_len = 0;
-    if ((val < 0) || flags.pad_space || flags.pad_plus) {
-      extras_len = 1;
-    }
-
-    // compute padding
-    int space_padding = field_width - absval_len - zero_padding - extras_len;
-
-    // now output...
-    if (!flags.pad_right && !flags.pad_zero) {
-      len += emit_pad(' ', space_padding);
-    }
-
-    if (val < 0) {
-      len += emit_char('-');
-    } else if (flags.pad_plus) {
-      len += emit_char('+');
-    } else if (flags.pad_space) {
-      len += emit_char(' ');
-    }
-
-    if (!flags.pad_right && flags.pad_zero) {
-      len += emit_pad('0', space_padding);
-    }
-
-    len += emit_pad('0', zero_padding);
-
-    if (val == 0) {
-      len += emit_char('0');
-    } else {
-      len += mu_puti(emitter_fn, obj, absval, 10, false);
-    }
-
-    if (flags.pad_right) {
-      len += emit_pad(' ', space_padding);
-    }
-
-    return len;
-  }
-#endif
-  return 0;
 }
 

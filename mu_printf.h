@@ -107,7 +107,7 @@ float mu_pow10(int p);
  * @param upper When true, emit alpha chars in upper case.
  * @return Number of chars emitted.
  */
-int mu_puti(
+int mu_emit_integer(
     emitter_t emitter_fn,
     void *obj,
     unsigned int v,
@@ -125,7 +125,7 @@ int mu_puti(
  * @param precision Number of digits to emit after decimal point.
  * @return Number of chars emitted.
  */
-int mu_putf(
+int mu_emit_float(
     emitter_t emitter_fn,
     void *obj,
     float v,

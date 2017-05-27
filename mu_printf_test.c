@@ -115,31 +115,31 @@ void mu_puti_test() {
    */
   PRINTF("...mu_puti_test\r\n");
 
-  MU_TEST(mu_puti(test_emitter, NULL, 0, 10, false) == 0);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, 0, 10, false) == 0);
   MU_TEST(check_test_emitter(""));
 
-  MU_TEST(mu_puti(test_emitter, NULL, 1, 10, false) == 1);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, 1, 10, false) == 1);
   MU_TEST(check_test_emitter("1"));
 
-  MU_TEST(mu_puti(test_emitter, NULL, -1, 10, false) == 10);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, -1, 10, false) == 10);
   MU_TEST(check_test_emitter("4294967295"));
 
-  MU_TEST(mu_puti(test_emitter, NULL, 100, 2, false) == 7);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, 100, 2, false) == 7);
   MU_TEST(check_test_emitter("1100100"));
 
-  MU_TEST(mu_puti(test_emitter, NULL, -100, 2, false) == 32);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, -100, 2, false) == 32);
   MU_TEST(check_test_emitter("11111111111111111111111110011100"));
 
-  MU_TEST(mu_puti(test_emitter, NULL, 26, 16, false) == 2);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, 26, 16, false) == 2);
   MU_TEST(check_test_emitter("1a"));
 
-  MU_TEST(mu_puti(test_emitter, NULL, -26, 16, false) == 8);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, -26, 16, false) == 8);
   MU_TEST(check_test_emitter("ffffffe6"));
 
-  MU_TEST(mu_puti(test_emitter, NULL, 26, 16, true) == 2);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, 26, 16, true) == 2);
   MU_TEST(check_test_emitter("1A"));
 
-  MU_TEST(mu_puti(test_emitter, NULL, -26, 16, true) == 8);
+  MU_TEST(mu_emit_integer(test_emitter, NULL, -26, 16, true) == 8);
   MU_TEST(check_test_emitter("FFFFFFE6"));
 }
 
@@ -155,39 +155,39 @@ void mu_putf_test() {
    */
   PRINTF("...mu_putf_test\r\n");
 
-  MU_TEST(mu_putf(test_emitter, NULL, 0.0, 0) == 1);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.0, 0) == 1);
   MU_TEST(check_test_emitter("0"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.0, 1) == 3);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.0, 1) == 3);
   MU_TEST(check_test_emitter("0.0"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.0, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.0, 6) == 8);
   MU_TEST(check_test_emitter("0.000000"));
 
-  MU_TEST(mu_putf(test_emitter, NULL, 1.0, 0) == 1);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 1.0, 0) == 1);
   MU_TEST(check_test_emitter("1"));
-  MU_TEST(mu_putf(test_emitter, NULL, 1.0, 1) == 3);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 1.0, 1) == 3);
   MU_TEST(check_test_emitter("1.0"));
-  MU_TEST(mu_putf(test_emitter, NULL, 1.0, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 1.0, 6) == 8);
   MU_TEST(check_test_emitter("1.000000"));
 
-  MU_TEST(mu_putf(test_emitter, NULL, 0.0000001, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.0000001, 6) == 8);
   MU_TEST(check_test_emitter("0.000000"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.000001, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.000001, 6) == 8);
   MU_TEST(check_test_emitter("0.000001"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.00001, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.00001, 6) == 8);
   MU_TEST(check_test_emitter("0.000010"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.0001, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.0001, 6) == 8);
   MU_TEST(check_test_emitter("0.000100"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.001, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.001, 6) == 8);
   MU_TEST(check_test_emitter("0.001000"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.01, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.01, 6) == 8);
   MU_TEST(check_test_emitter("0.010000"));
-  MU_TEST(mu_putf(test_emitter, NULL, 0.1, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 0.1, 6) == 8);
   MU_TEST(check_test_emitter("0.100000"));
-  MU_TEST(mu_putf(test_emitter, NULL, 10.0, 6) == 9);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 10.0, 6) == 9);
   MU_TEST(check_test_emitter("10.000000"));
-  MU_TEST(mu_putf(test_emitter, NULL, 100.0, 6) == 10);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 100.0, 6) == 10);
   MU_TEST(check_test_emitter("100.000000"));
-  MU_TEST(mu_putf(test_emitter, NULL, 1000.0, 6) == 11);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 1000.0, 6) == 11);
   MU_TEST(check_test_emitter("1000.000000"));
   // 10000 cannot be represented exactly - it's really 10000.0001 so this fails.
   //MU_TEST(mu_putf(test_emitter, NULL, 10000.0, 6) == 12);
@@ -195,22 +195,22 @@ void mu_putf_test() {
   //MU_TEST(mu_putf(test_emitter, NULL, 100000.0, 6) == 13);
   //MU_TEST(check_test_emitter("100000.000000"));
 
-  MU_TEST(mu_putf(test_emitter, NULL, 6.6666666, 6) == 8);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 6.6666666, 6) == 8);
   MU_TEST(check_test_emitter("6.666667"));
-  MU_TEST(mu_putf(test_emitter, NULL, 6.6666666, 5) == 7);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 6.6666666, 5) == 7);
   MU_TEST(check_test_emitter("6.66667"));
-  MU_TEST(mu_putf(test_emitter, NULL, 6.6666666, 4) == 6);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 6.6666666, 4) == 6);
   MU_TEST(check_test_emitter("6.6667"));
-  MU_TEST(mu_putf(test_emitter, NULL, 6.6666666, 3) == 5);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 6.6666666, 3) == 5);
   MU_TEST(check_test_emitter("6.667"));
-  MU_TEST(mu_putf(test_emitter, NULL, 6.6666666, 2) == 4);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 6.6666666, 2) == 4);
   MU_TEST(check_test_emitter("6.67"));
-  MU_TEST(mu_putf(test_emitter, NULL, 6.6666666, 1) == 3);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 6.6666666, 1) == 3);
   MU_TEST(check_test_emitter("6.7"));
-  MU_TEST(mu_putf(test_emitter, NULL, 6.6666666, 0) == 1);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 6.6666666, 0) == 1);
   MU_TEST(check_test_emitter("7"));
 
-  MU_TEST(mu_putf(test_emitter, NULL, 9.99, 1) == 4);
+  MU_TEST(mu_emit_float(test_emitter, NULL, 9.99, 1) == 4);
   MU_TEST(check_test_emitter("10.0"));
 }
 
@@ -680,7 +680,7 @@ void mu_printf_d_test() {
   MU_TEST(check_test_emitter("   -123456"));
 }
 
-void mu_printf_xoX_test() {
+void mu_printf_u_test() {
   PRINTF("...mu_printf_xoX_test\r\n");
   MU_TEST(mu_printf(test_emitter, NULL, "%x", 0) == 1);
   MU_TEST(check_test_emitter("0"));
@@ -807,6 +807,338 @@ void mu_printf_xoX_test() {
 
   MU_TEST(mu_printf(test_emitter, NULL, "%#o", 6844) == 6);
   MU_TEST(check_test_emitter("015274"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%b", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#b", 0) == 1);
+  MU_TEST(check_test_emitter("0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%b", 1) == 1);
+  MU_TEST(check_test_emitter("1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#b", 1) == 3);
+  MU_TEST(check_test_emitter("0b1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%b", 90) == 7);
+  MU_TEST(check_test_emitter("1011010"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#b", 90) == 9);
+  MU_TEST(check_test_emitter("0b1011010"));
+
+}
+
+void mu_printf_f_test() {
+  MU_TEST(mu_printf(test_emitter, NULL, "%f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% f", 0.0) == 9);
+  MU_TEST(check_test_emitter(" 0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+f", 0.0) == 9);
+  MU_TEST(check_test_emitter("+0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5f", 0.0) == 9);
+  MU_TEST(check_test_emitter(" 0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5f", 0.0) == 9);
+  MU_TEST(check_test_emitter("+0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05f", 0.0) == 8);
+  MU_TEST(check_test_emitter("0.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.f", 0.0) == 5);
+  MU_TEST(check_test_emitter("    0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.f", 0.0) == 5);
+  MU_TEST(check_test_emitter("    0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.f", 0.0) == 5);
+  MU_TEST(check_test_emitter("   0."));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.f", 0.0) == 5);
+  MU_TEST(check_test_emitter("   +0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.f", 0.0) == 5);
+  MU_TEST(check_test_emitter("0    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.f", 0.0) == 5);
+  MU_TEST(check_test_emitter("00000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.1f", 0.0) == 5);
+  MU_TEST(check_test_emitter("  0.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.1f", 0.0) == 5);
+  MU_TEST(check_test_emitter("  0.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.1f", 0.0) == 5);
+  MU_TEST(check_test_emitter("  0.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.1f", 0.0) == 5);
+  MU_TEST(check_test_emitter(" +0.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.1f", 0.0) == 5);
+  MU_TEST(check_test_emitter("0.0  "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.1f", 0.0) == 5);
+  MU_TEST(check_test_emitter("000.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% f", 1.0) == 9);
+  MU_TEST(check_test_emitter(" 1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+f", 1.0) == 9);
+  MU_TEST(check_test_emitter("+1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5f", 1.0) == 9);
+  MU_TEST(check_test_emitter(" 1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5f", 1.0) == 9);
+  MU_TEST(check_test_emitter("+1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05f", 1.0) == 8);
+  MU_TEST(check_test_emitter("1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.f", 1.0) == 5);
+  MU_TEST(check_test_emitter("    1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.f", 1.0) == 5);
+  MU_TEST(check_test_emitter("    1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.f", 1.0) == 5);
+  MU_TEST(check_test_emitter("   1."));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.f", 1.0) == 5);
+  MU_TEST(check_test_emitter("   +1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.f", 1.0) == 5);
+  MU_TEST(check_test_emitter("1    "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.f", 1.0) == 5);
+  MU_TEST(check_test_emitter("00001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter("  1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter("  1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter("  1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter(" +1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter("1.0  "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter("001.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05f", -1.0) == 9);
+  MU_TEST(check_test_emitter("-1.000000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.f", -1.0) == 5);
+  MU_TEST(check_test_emitter("   -1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.f", -1.0) == 5);
+  MU_TEST(check_test_emitter("   -1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.f", -1.0) == 5);
+  MU_TEST(check_test_emitter("  -1."));
+  // PRINTF("got '%s'\r\n", test_buf);
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.f", -1.0) == 5);
+  MU_TEST(check_test_emitter("   -1"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.f", -1.0) == 5);
+  MU_TEST(check_test_emitter("-1   "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.f", -1.0) == 5);
+  MU_TEST(check_test_emitter("-0001"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter(" -1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter(" -1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter(" -1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter(" -1.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter("-1.0 "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter("-01.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% f", 9.99) == 9);
+  MU_TEST(check_test_emitter(" 9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+f", 9.99) == 9);
+  MU_TEST(check_test_emitter("+9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%0f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5f", 9.99) == 9);
+  MU_TEST(check_test_emitter(" 9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5f", 9.99) == 9);
+  MU_TEST(check_test_emitter("+9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05f", 9.99) == 8);
+  MU_TEST(check_test_emitter("9.990000"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.f", 9.99) == 5);
+  MU_TEST(check_test_emitter("   10"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.f", 9.99) == 5);
+  MU_TEST(check_test_emitter("   10"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.f", 9.99) == 5);
+  MU_TEST(check_test_emitter("  10."));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.f", 9.99) == 5);
+  MU_TEST(check_test_emitter("  +10"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.f", 9.99) == 5);
+  MU_TEST(check_test_emitter("10   "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.f", 9.99) == 5);
+  MU_TEST(check_test_emitter("00010"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%5.1f", 9.99) == 5);
+  MU_TEST(check_test_emitter(" 10.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 5.1f", 9.99) == 5);
+  MU_TEST(check_test_emitter(" 10.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%#5.1f", 9.99) == 5);
+  MU_TEST(check_test_emitter(" 10.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+5.1f", 9.99) == 5);
+  MU_TEST(check_test_emitter("+10.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%-5.1f", 9.99) == 5);
+  MU_TEST(check_test_emitter("10.0 "));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.1f", 9.99) == 5);
+  MU_TEST(check_test_emitter("010.0"));
+
+
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter("001.0"));
+  // PRINTF("got '%s'\r\n", test_buf);
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 05.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter(" 01.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+05.1f", 1.0) == 5);
+  MU_TEST(check_test_emitter("+01.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%05.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter("-01.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "% 05.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter("-01.0"));
+
+  MU_TEST(mu_printf(test_emitter, NULL, "%+05.1f", -1.0) == 5);
+  MU_TEST(check_test_emitter("-01.0"));
+
 }
 
 void mu_printf_test() {
@@ -821,6 +1153,7 @@ void mu_printf_test() {
   mu_printf_c_test();
   mu_printf_s_test();
   mu_printf_d_test();
-  mu_printf_xoX_test();
+  mu_printf_u_test();
+  mu_printf_f_test();
   PRINTF("...end of tests\r\n");
 }
