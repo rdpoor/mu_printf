@@ -6,14 +6,20 @@
  *  Author: rdpoor@gmail.com
  */
 
-#include <mu_printf.h>
+#include "mu_printf.h"
 #include <stdarg.h>
 
-// happy gnu extension
+// happy gnu extensions
 #define MAX(a,b) ({ \
   __typeof__ (a) _a = (a); \
   __typeof__ (b) _b = (b); \
   _a > _b ? _a : _b; \
+})
+
+#define MIN(a,b) ({ \
+  __typeof__ (a) _a = (a); \
+  __typeof__ (b) _b = (b); \
+  _a < _b ? _a : _b; \
 })
 
 // =============================================================================
@@ -35,6 +41,19 @@ int emit_float_aux(emitter_t emitter, void *obj, float v, int p10, bool round_up
 
 int mu_null_emitter(void *obj, const char c) {
   return 1;
+}
+
+float mu_precision(float v, int ndigits) {
+  if (v == 0.0) {
+    return 0.0;
+  } else if (v < 0.0) {
+    return -mu_precision(-v, ndigits);
+  }
+  float p10 = mu_pow10(ndigits);
+  float v1 = v * p10;
+  float v2 = (int)(v1 + 0.5);
+  float v3 = v2 / p10;
+  return v3;
 }
 
 int mu_emit_char(emitter_t emitter_fn, void *obj, const char c) {
@@ -106,33 +125,29 @@ float mu_pow10(int p) {
   return res;
 }
 
+char int_to_digit(unsigned int v, int base, bool upper) {
+  int rem = v % base;
+  if (rem < 10) {
+    return rem + '0';
+  } else if (upper) {
+    return rem - 10 + 'A';
+  } else {
+    return rem - 10 + 'a';
+  }
+}
+
 int mu_emit_integer(
     emitter_t emitter_fn,
     void *obj,
     unsigned int v,
     unsigned int base,
     bool upper) {
-  // ============================== lexically scoped
-  char int_to_digit(int v) {
-    int rem = v % base;
-    if (rem < 10) {
-      return rem + '0';
-    } else if (upper) {
-      return rem - 10 + 'A';
-    } else {
-      return rem - 10 + 'a';
-    }
+  if (v == 0) {
+    return 0;
   }
-  int mu_puti_aux(unsigned int v) {
-    if (v == 0) {
-      return 0;
-    }
-    int n = mu_puti_aux(v / base);
-    mu_emit_char(emitter_fn, obj, int_to_digit(v));
-    return n + 1;
-  }
-  // ============================== top level
-  return mu_puti_aux(v);
+  int n = mu_emit_integer(emitter_fn, obj, v / base, base, upper);
+  mu_emit_char(emitter_fn, obj, int_to_digit(v, base, upper));
+  return n + 1;
 }
 
 int mu_emit_float(emitter_t emitter,
@@ -435,7 +450,123 @@ int process_d_directive(mu_directive_t *directive, int v) {
  * Process a float using n.nnne+xx format
  */
 int process_e_directive(mu_directive_t *directive, double v) {
-  return 0;
+  bool mantissa_is_neg = v < 0;
+  if (mantissa_is_neg) v = -v;
+  unsigned int mantissa_width;
+  unsigned int exponent_width;
+  int exponent;
+  bool exponent_is_neg = false;
+
+  if (directive->precision == MU_PRECISION_NOT_GIVEN) {
+    directive->precision = 6;
+  }
+
+  exponent = 0;
+  if (v != 0.0) {
+    // normalize v
+    while (v >= 10) {
+      v = v / 10;
+      exponent += 1;
+    }
+    while (v < 1.0) {
+      v = v * 10;
+      exponent -= 1;
+    }
+  }
+  // at this point, 1.0 <= v < 10 (unless v is zero), and exponent is the power
+  // of 10 that will restore it to its original value.
+
+  // how wide is the mantissa?
+  mantissa_width = 1 + directive->precision;
+  // printing the decimal point?
+  if (directive->precision > 0 || directive->flags.alternate_form) {
+    mantissa_width += 1;
+  }
+  // how many sigificant digits in exponent?
+  if (exponent < 0) {
+    exponent = -exponent;
+    exponent_is_neg = true;
+  }
+  exponent_width = mu_emit_integer(mu_null_emitter,
+                                   (void *) 0,
+                                   exponent,
+                                   10,
+                                   false);
+  // what prefix gets printed just before the mantissa?
+  char *prefix = "";
+  char n_extra = 0;
+  if (mantissa_is_neg) {
+    prefix = "-";
+    n_extra = 1;
+  } else if (directive->flags.pad_plus) {
+    prefix = "+";
+    n_extra = 1;
+  } else if (directive->flags.pad_space) {
+    prefix = " ";
+    n_extra = 1;
+  }
+
+  // how many pad characters will we print?
+  int padding = directive->width - n_extra - mantissa_width - 2 -
+      MAX(2, exponent_width);
+
+  // now output:
+  int n_emitted = 0;
+  // ...leading spaces
+  if (!directive->flags.pad_right && !directive->flags.pad_zero) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             ' ',
+                             padding);
+  }
+  // ...prefix
+  n_emitted += mu_emit_str(directive->emitter_fn,
+                           directive->emitter_arg,
+                           prefix,
+                           -1);
+  // ...zero padding
+  if (directive->flags.pad_zero) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             '0',
+                             padding);
+  }
+  // ...the mantissa
+  n_emitted += mu_emit_float(directive->emitter_fn,
+                       directive->emitter_arg,
+                       v,
+                       directive->precision);
+  // ...any explicit trailing '.'
+  if (directive->precision == 0 && directive->flags.alternate_form) {
+    n_emitted += mu_emit_char(directive->emitter_fn,
+                              directive->emitter_arg,
+                              '.');
+  }
+  // ...the exponent
+  n_emitted += mu_emit_char(directive->emitter_fn,
+                            directive->emitter_arg,
+                            directive->flags.upper_case ? 'E' : 'e');
+  n_emitted += mu_emit_char(directive->emitter_fn,
+                            directive->emitter_arg,
+                            exponent_is_neg ? '-' : '+');
+  n_emitted += mu_emit_pad(directive->emitter_fn,
+                           directive->emitter_arg,
+                           '0',
+                           2 - exponent_width);
+  n_emitted += mu_emit_integer(mu_null_emitter,
+                               (void *) 0,
+                               exponent,
+                               10,
+                               false);
+  // ...trailing padding
+  if (directive->flags.pad_right) {
+    n_emitted += mu_emit_pad(directive->emitter_fn,
+                             directive->emitter_arg,
+                             ' ',
+                             padding);
+  }
+
+  return n_emitted;
 }
 
 /*

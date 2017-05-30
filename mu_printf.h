@@ -98,6 +98,11 @@ int mu_floor_log10(float x);
 float mu_pow10(int p);
 
 /*!
+ * @brief Limit a number to a given number of fractional digits
+ */
+float mu_precision(float v, int ndigits);
+
+/*!
  * @brief Print an unsigned integer.
  *
  * @param emitter_fn Pointer to char emitter function
